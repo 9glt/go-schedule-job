@@ -9,7 +9,9 @@ import (
 	"os"
 	"time"
     "runtime"
-	"github.com/etcd-io/bbolt"
+    "github.com/etcd-io/bbolt"
+    
+    schedulejob "github.com/9glt/go-schedule-job"
 )
 
 var (
@@ -49,7 +51,7 @@ func (db *DB) Delete(key []byte) {
 	})
 }
 
-var _ = (Store)(&DB{})
+var _ = (schedulejob.Store)(&DB{})
 
 func TestMain(t *testing.T) {
 	db, err := bbolt.Open(dbPath, 0755, nil)
@@ -61,7 +63,7 @@ func TestMain(t *testing.T) {
 		os.Remove(dbPath)
 	}()
 
-    sc := New(&DB{db})
+    sc := schedulejob.New(&DB{db})
     
     // schedule job after 5seconds
     sc.Schedule(5, []byte("http://test1"))
