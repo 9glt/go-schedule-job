@@ -1,14 +1,10 @@
-# go-schedule-job
-Simple cron like job scheduler 
-
-
-```go
-package main
+package schedulejob
 
 import (
 	"os"
+	"testing"
 	"time"
-    "runtime"
+
 	"github.com/etcd-io/bbolt"
 )
 
@@ -61,27 +57,36 @@ func TestMain(t *testing.T) {
 		os.Remove(dbPath)
 	}()
 
-    sc := New(&DB{db})
-    
-    // schedule job after 5seconds
-    sc.Schedule(5, []byte("http://test1"))
-    // true for auto delete items after send to channel
-	ch, _ := sc.Worker(true)
+	sc := New(&DB{db})
+	sc.Schedule(5, []byte("http://test1"))
+	sc.Schedule(7, []byte("http://test2"))
+	ch, fn := sc.Worker(false)
+	wait := make(chan struct{})
 	go func() {
 	for1:
 		for {
 			select {
 			case item, ok := <-ch:
 				if ok {
-                    // do you job with item.Payload
+					// do your work with item.Payload
+					item.Delete()
+					// sc.Schedule(1, item.Payload)
 					continue
 				}
 				break for1
 			}
 		}
+		close(wait)
 	}()
-    
-    runtime.Goexit()
+	go func() {
+		time.Sleep(14 * time.Second)
+		fn()
+	}()
+	<-wait
 }
 
-```
+func clone(b []byte) []byte {
+	r := make([]byte, len(b))
+	copy(r, b)
+	return r
+}
